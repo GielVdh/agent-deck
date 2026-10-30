@@ -1,7 +1,7 @@
--- Agent Deck: every live coding agent on this machine (or a Coder workspace) as
--- an 8-bit character in a Tern block.
--- Data comes from the Python helpers in bin/, run locally or piped over ssh to
--- a Coder workspace (`m` switches machine).
+-- Agent Deck: every live coding agent on this Mac and on your running Coder
+-- workspaces as an 8-bit character in a Tern block.
+-- Data comes from the Python helpers in bin/, run locally and piped over ssh to
+-- each Coder workspace (`m` narrows the view to one machine).
 -- Views are styled elements from common.luau; the look lives in styles.css and sprites.css.
 
 local C = require("./common")
@@ -32,60 +32,128 @@ local function agent_label(agent: string?): string
 	return AGENT_LABEL[agent or "claude"] or (agent or "agent")
 end
 
--- Live agents come from bin/agents.py: every running Claude Code session on the
--- machine (Superset, herdr, Tern or a plain terminal), with Claude's own status.
+local LOCAL = "local"
+local MAX_ASLEEP = 18
+
+-- The machine a tile lives on, as C.py/C.open_tab/C.sh take it: nil is this Mac.
+local function remote(m: string): string?
+	return if m == LOCAL then nil else m
+end
+
+-- A tile's identity: the session id (or pid), prefixed with its workspace so two
+-- machines can't collide. It also picks the character, so it must stay stable.
+local function agent_key(m: string, a): string
+	local id = a.id or tostring(a.pid)
+	return if m == LOCAL then id else m .. ":" .. id
+end
+
+-- The machines in view: all of them, or the one `m` narrowed it to.
+local function in_view(s): { string }
+	local out = {}
+	for _, m in s.order do
+		if s.view == nil or s.view == m then table.insert(out, m) end
+	end
+	return out
+end
+
+-- Live agents come from bin/agents.py on every machine: each running Claude Code
+-- session (Superset, herdr, Tern or a plain terminal) with Claude's own status,
+-- plus the other agents herdr and Superset know about.
 local function tiles(s)
-	local out, live = {}, {}
-	for _, a in s.agents do
-		if a.id then live[a.id] = true end
-		table.insert(out, { agent = a, state = C.agent_state(a.status), key = a.id or tostring(a.pid) })
+	local out, live, asleep = {}, {}, {}
+	for _, m in in_view(s) do
+		local d = s.by[m]
+		if d then
+			for _, a in d.agents do
+				if a.id then live[m .. "|" .. a.id] = true end
+				table.insert(out, { agent = a, machine = remote(m), state = C.agent_state(a.status), key = agent_key(m, a) })
+			end
+			for _, x in d.sessions do table.insert(asleep, { session = x, machine = remote(m), m = m }) end
+		end
 	end
 	table.sort(out, function(x, y)
 		local rx, ry = STATE_RANK[x.state] or 9, STATE_RANK[y.state] or 9
 		if rx ~= ry then return rx < ry end
 		return (x.agent.since or 0) > (y.agent.since or 0)
 	end)
-	for _, x in s.sessions do
-		if not live[x.id] then table.insert(out, { session = x, state = "sleep", key = x.id }) end
+	table.sort(asleep, function(x, y) return (x.session.mtime or 0) > (y.session.mtime or 0) end)
+	local n = 0
+	for _, t in asleep do
+		if n >= MAX_ASLEEP then break end
+		if not live[t.m .. "|" .. t.session.id] then
+			n += 1
+			local key = if t.m == LOCAL then t.session.id else t.m .. ":" .. t.session.id
+			table.insert(out, { session = t.session, machine = t.machine, state = "sleep", key = key })
+		end
 	end
 	return out
+end
+
+-- Refreshes one machine; a machine whose ssh fails keeps its last good tiles.
+local function refresh_machine(s, m: string, done: () -> ())
+	local d = s.by[m]
+	if not d then
+		d = { agents = {}, sessions = {} }
+		s.by[m] = d
+	end
+	if d.busy then return done() end
+	d.busy = true
+	local pending = 2
+	local function one()
+		pending -= 1
+		if pending > 0 then return end
+		d.busy = false
+		done()
+	end
+	C.py(remote(m), "agents.py", { "--peek", "24" }, function(doc, err)
+		d.err = err
+		if doc then
+			d.agents = doc.agents
+			local seen = {}
+			for _, a in d.agents do
+				local state = C.agent_state(a.status)
+				local key = agent_key(m, a)
+				seen[key] = state
+				-- ping once per switch into "needs you", not on the first look
+				if state == "alert" and d.prev and d.prev[key] ~= "alert" then
+					local _, name = C.critter(key, a.agent)
+					C.notify(`{name} needs your input`, a.title or `a {agent_label(a.agent)} session is waiting`)
+				end
+			end
+			d.prev = seen
+		end
+		one()
+	end)
+	C.py(remote(m), "sessions.py", { tostring(MAX_ASLEEP) }, function(doc, err)
+		d.sessions_err = err
+		if doc then d.sessions = doc.sessions end
+		one()
+	end)
 end
 
 local function sessions_refresh(s)
 	s.loading = true
 	C.render(s)
-	local pending = 2
-	local function done()
-		pending -= 1
-		if pending > 0 then return end
-		s.loading = false
-		s.updated = os.time()
-		s.sel = math.clamp(s.sel, 1, math.max(1, #tiles(s)))
-		C.render(s)
-	end
-	C.py(s.machine, "agents.py", { "--peek", "24" }, function(doc, err)
-		s.agent_err = err
-		if doc then s.agents = doc.agents end
-		local seen = {}
-		for _, a in s.agents do
-			local state = C.agent_state(a.status)
-			local key = a.id or tostring(a.pid)
-			seen[key] = state
-			-- ping once per switch into "needs you", not on the first look
-			if state == "alert" and s.prev and s.prev[key] ~= "alert" then
-				local _, name = C.critter(a.id, a.agent)
-				C.notify(`{name} needs your input`, a.title or `a {agent_label(a.agent)} session is waiting`)
-			end
+	C.machines(function(names)
+		local order = { LOCAL }
+		for _, n in names do table.insert(order, n) end
+		s.order = order
+		-- a workspace that stopped drops out of view
+		for m in s.by do
+			if not table.find(order, m) then s.by[m] = nil end
 		end
-		s.prev = seen
-		done()
+		local pending = #order
+		for _, m in order do
+			refresh_machine(s, m, function()
+				pending -= 1
+				if pending > 0 then return end
+				s.loading = false
+				s.updated = os.time()
+				s.sel = math.clamp(s.sel, 1, math.max(1, #tiles(s)))
+				C.render(s)
+			end)
+		end
 	end)
-	C.py(s.machine, "sessions.py", { "18" }, function(doc, err)
-		s.err = err
-		if doc then s.sessions = doc.sessions end
-		done()
-	end)
-	C.machines(function() end)
 end
 
 -- On a remote machine Superset's CLI may not be on PATH; it installs to ~/.superset/bin.
@@ -98,24 +166,23 @@ end
 -- Opens the live session where you can type into it: a Tern tab attached to its
 -- Superset terminal or herdr pane; a past session resumes with claude --resume.
 local function open_tile(s, t)
-	local a, x = t.agent, t.session
+	local a, x, m = t.agent, t.session, t.machine
 	if a and a.host == "superset" and a.superset_terminal then
-		local bin = if s.machine then REMOTE_SUPERSET else C.shq(C.SUPERSET)
-		C.open_tab(s.machine, a.cwd, `{bin} terminals attach {superset_args(a)}`)
+		local bin = if m then REMOTE_SUPERSET else C.shq(C.SUPERSET)
+		C.open_tab(m, a.cwd, `{bin} terminals attach {superset_args(a)}`)
 	elseif a and a.host == "herdr" and a.herdr_pane then
-		C.open_tab(s.machine, a.cwd, "herdr agent attach " .. C.shq(a.herdr_pane))
+		C.open_tab(m, a.cwd, "herdr agent attach " .. C.shq(a.herdr_pane))
 	elseif a then
-		C.open_tab(s.machine, a.cwd, nil)
+		C.open_tab(m, a.cwd, nil)
 	elseif x then
-		C.open_tab(s.machine, x.cwd, "claude --resume " .. x.id)
+		C.open_tab(m, x.cwd, "claude --resume " .. x.id)
 	end
 end
 
 -- First press arms, a second within 4 s ends the session through the app that runs it.
 local function close_tile(s, t)
-	local a = t.agent
+	local a, m, key = t.agent, t.machine, t.key
 	if not a then return end
-	local key = a.id or tostring(a.pid)
 	if not (s.confirm and s.confirm.key == key and s.confirm.until_ > tern.now()) then
 		s.confirm = { key = key, until_ = tern.now() + 4000 }
 		tern.timer(4100, function() C.render(s) end)
@@ -124,7 +191,7 @@ local function close_tile(s, t)
 	s.confirm = nil
 	local cmd
 	if a.host == "superset" and a.superset_terminal then
-		local bin = if s.machine then REMOTE_SUPERSET else C.shq(C.SUPERSET)
+		local bin = if m then REMOTE_SUPERSET else C.shq(C.SUPERSET)
 		cmd = `{bin} terminals close {superset_args(a)}`
 	elseif a.host == "herdr" and a.herdr_pane then
 		cmd = "herdr pane close " .. C.shq(a.herdr_pane)
@@ -133,7 +200,7 @@ local function close_tile(s, t)
 	else
 		return
 	end
-	C.sh(s.machine, cmd, function(ok, out)
+	C.sh(m, cmd, function(ok, out)
 		s.err = if ok then nil else "close: " .. out
 		tern.timer(1500, function() sessions_refresh(s) end)
 	end)
@@ -180,6 +247,7 @@ local function tile_view(s, t, i: number)
 	local line = { C.chip(where, if a then "accent" else "muted") }
 	if branch and branch ~= "HEAD" and branch ~= where then table.insert(line, C.t("dd-ell dd-mono dd-dim", "⎇ " .. branch)) end
 	local who = if a then "· " .. (if a.agent ~= "claude" then agent_label(a.agent) .. " · " else "") .. (HOST_LABEL[a.host] or a.host) else "· asleep"
+	if t.machine then who ..= " @ " .. t.machine end
 	local body = {
 		C.div("dd-agent-name", { C.t(nil, name), C.t("who", who) }),
 		C.t("dd-tile-title", title),
@@ -191,7 +259,7 @@ local function tile_view(s, t, i: number)
 	if a and a.peek and #a.peek > 0 then table.insert(main, peek_view(a)) end
 	local kids = { C.el("div", "dd-tile-main", main, nil, "open=" .. i) }
 	if a then
-		local armed = s.confirm and s.confirm.key == (a.id or tostring(a.pid)) and s.confirm.until_ > tern.now()
+		local armed = s.confirm and s.confirm.key == t.key and s.confirm.until_ > tern.now()
 		table.insert(kids, C.div("dd-tile-acts", {
 			C.el("div", "dd-btn go", nil, if t.state == "alert" then "Answer" else "Open", "open=" .. i),
 			C.el("div", "dd-btn danger" .. (if armed then " armed" else ""), nil, if armed then "Really close?" else "Close", "close=" .. i),
@@ -200,21 +268,32 @@ local function tile_view(s, t, i: number)
 	return C.div("dd-tile " .. t.state .. (if i == s.sel then " sel" else ""), kids)
 end
 
+-- The machine filter: All, this Mac, each running workspace, with live counts.
+local function machine_seg(s)
+	local items = { { "All", s.view == nil } }
+	for _, m in s.order do
+		local d = s.by[m]
+		table.insert(items, { if m == LOCAL then "Mac" else m, s.view == m, d and #d.agents or nil })
+	end
+	return C.seg(items)
+end
+
 tern.block.define("sessions", {
 	init = function(cx, args, saved)
-		local s = { cx = cx, sel = 1, agents = {}, sessions = {}, loading = false, machine = saved and saved.machine }
+		local s = { cx = cx, sel = 1, by = {}, order = { LOCAL }, loading = false, view = saved and saved.view }
 		sessions_refresh(s)
 		C.every(10000, s, function() sessions_refresh(s) end)
 		return s
 	end,
 	title = function(s)
 		local need = 0
-		for _, a in s.agents do
-			if C.agent_state(a.status) == "alert" then need += 1 end
+		for _, t in tiles(s) do
+			if t.state == "alert" then need += 1 end
 		end
-		return "Sessions · " .. (if need > 0 then `{need} need{if need == 1 then "s" else ""} you` else (s.machine or "local"))
+		local view = if s.view == nil then "all machines" elseif s.view == LOCAL then "Mac" else s.view
+		return "Sessions · " .. (if need > 0 then `{need} need{if need == 1 then "s" else ""} you` else view)
 	end,
-	save = function(s) return { machine = s.machine } end,
+	save = function(s) return { view = s.view } end,
 	view = function(s, cx)
 		local all = tiles(s)
 		local working, waiting = 0, {}
@@ -223,7 +302,7 @@ tern.block.define("sessions", {
 			if t.state == "alert" then table.insert(waiting, { t, i }) end
 		end
 		local sub = if #waiting > 0 then `{#waiting} waiting on you` elseif working > 0 then `{working} working` else "the crew"
-		local kids = { C.head("✦", "Sessions", sub, { C.machine_seg(s.machine) }, s.loading) }
+		local kids = { C.head("✦", "Sessions", sub, { machine_seg(s) }, s.loading) }
 
 		if #waiting > 0 then
 			local names = {}
@@ -238,7 +317,11 @@ tern.block.define("sessions", {
 			}, nil, "open=" .. waiting[1][2]))
 		end
 		if s.err then table.insert(kids, C.err(s.err)) end
-		if s.agent_err then table.insert(kids, C.err("live sessions: " .. s.agent_err)) end
+		for _, m in in_view(s) do
+			local d = s.by[m]
+			local e = d and (d.err or d.sessions_err)
+			if e then table.insert(kids, C.err((if m == LOCAL then "Mac" else m) .. ": " .. e)) end
+		end
 
 		local live, asleep = {}, {}
 		for i, t in all do
@@ -253,7 +336,7 @@ tern.block.define("sessions", {
 
 		return {
 			main = C.page(kids),
-			dock = C.keys({ { "←↑↓→", "select" }, { "⏎", "open / answer" }, { "x", "close" }, { "n", "new claude here" }, { "m", "machine" }, { "r", "refresh" } }, s.updated),
+			dock = C.keys({ { "←↑↓→", "select" }, { "⏎", "open / answer" }, { "x", "close" }, { "n", "new claude here" }, { "m", "machines" }, { "r", "refresh" } }, s.updated),
 		}
 	end,
 	event = function(s, ev, cx)
@@ -285,11 +368,10 @@ tern.block.define("sessions", {
 			sessions_refresh(s)
 			return true
 		elseif k == "m" then
-			C.next_machine(s.machine, function(m)
-				s.machine, s.sel, s.agents, s.sessions, s.prev = m, 1, {}, {}, nil
-				pcall(function() s.cx:save() end)
-				sessions_refresh(s)
-			end)
+			-- cycle the view: all machines → Mac → each workspace → all
+			local i = if s.view == nil then 0 else (table.find(s.order, s.view) or #s.order)
+			s.view, s.sel = s.order[i + 1], 1
+			pcall(function() s.cx:save() end)
 			return true
 		elseif not t then
 			return false
@@ -300,7 +382,7 @@ tern.block.define("sessions", {
 			close_tile(s, t)
 			return true
 		elseif k == "n" then
-			C.open_tab(s.machine, (t.agent and t.agent.cwd) or (t.session and t.session.cwd), "claude")
+			C.open_tab(t.machine, (t.agent and t.agent.cwd) or (t.session and t.session.cwd), "claude")
 			return false
 		end
 		return false

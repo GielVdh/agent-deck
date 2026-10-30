@@ -13,7 +13,7 @@ Open it with ⌘K → **Sessions**.
 - **Hover to peek.** Hover a tile and a popover shows the bottom of that session's terminal: what it is doing or saying right now.
 - **Click to jump in.** A click (or ⏎) opens the live session in a Tern tab, attached to its Superset terminal or herdr pane. Close ends it (press twice).
 - **Recent sessions sleep below.** Your recent Claude Code sessions doze in their own tiles; click one to resume it.
-- **Remote too.** Press `m` to switch between this Mac and each running Coder workspace. The helpers run there over ssh; nothing needs installing.
+- **Every machine at once.** Agents on this Mac and on each of your running Coder workspaces share one view; remote tiles say where they run (`· herdr @ my-workspace`), and Open, Close and `n` act on that machine. Press `m` to narrow the view to one machine. The helpers run there over ssh; nothing needs installing.
 
 ### When an agent needs you
 
@@ -99,7 +99,7 @@ tern plugin link ~/tern-plugins/agent-deck
 | Claude Code | live status, titles and questions of Claude sessions; recent sessions to resume |
 | [herdr](https://herdr.dev) | agents running in herdr panes; attaching to and closing them |
 | Superset / Paradev | agents in Superset terminals; attaching to and closing them |
-| `coder` (with `coder config-ssh`) | switching to remote Coder workspaces |
+| `coder` (with `coder config-ssh`) | including the agents on your running Coder workspaces |
 
 ## Configure
 
@@ -111,7 +111,7 @@ Everything has a default. To change one, copy `config.example.json` to `config.j
 
 ## Keys
 
-`←↑↓→` select · `⏎` open / answer · `x` close (twice) · `n` new Claude in that folder · `m` machine · `r` refresh
+`←↑↓→` select · `⏎` open / answer · `x` close (twice) · `n` new Claude in that folder · `m` all machines / one machine · `r` refresh
 
 ## How it works
 

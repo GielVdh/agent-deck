@@ -125,17 +125,6 @@ function M.machines(cb: ({ string }) -> ())
 	end)
 end
 
--- Next machine after `cur` in [local, running workspaces...].
-function M.next_machine(cur: string?, cb: (string?) -> ())
-	M.machines(function(names)
-		if not cur then return cb(names[1]) end
-		for i, n in names do
-			if n == cur then return cb(names[i + 1]) end
-		end
-		cb(nil)
-	end)
-end
-
 -- Re-arms `fn` every `ms` while the block's cx is still alive.
 function M.every(ms: number, s: any, fn: () -> ())
 	tern.timer(ms, function()
@@ -256,14 +245,6 @@ function M.seg(items: { any })
 		table.insert(kids, el("span", "dd-seg-i" .. (if it[2] then " on" else ""), inner))
 	end
 	return el("div", "dd-seg", kids)
-end
-
--- The machine switcher: this Mac + running workspaces, the current one on.
-function M.machine_seg(cur: string?)
-	local items = { { "Mac", cur == nil } }
-	for _, n in machine_cache.names do table.insert(items, { n, n == cur }) end
-	if cur and not table.find(machine_cache.names, cur) then table.insert(items, { cur, true }) end
-	return M.seg(items)
 end
 
 function M.group(head: string, n: number?, children: { any })
