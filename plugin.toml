@@ -1,0 +1,11 @@
+schema = 1
+id = "agent-deck"
+name = "Agent Deck"
+version = "0.1.0"
+description = "Every live coding agent as an 8-bit character: status, peeks and a needs-you alarm — locally and on Coder workspaces."
+host = "host.luau"
+styles = ["styles.css", "sprites.css"]
+
+[[blocks]]
+id = "sessions"
+title = "Sessions"

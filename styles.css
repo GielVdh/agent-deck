@@ -1,0 +1,124 @@
+/* Agent Deck block styles. Only Tern's theme variables, so light/dark and themes follow along.
+   Every class is dd- prefixed; plugin CSS is global. */
+.dd { display: flex; flex-direction: column; gap: 12px; min-width: 0; font: 12.5px/1.4 var(--sans); color: var(--t1); }
+/* header bar */
+.dd-head { display: flex; align-items: center; gap: 8px; min-width: 0; min-height: 30px; padding: 0 2px 10px; box-shadow: inset 0 -1px 0 var(--l2); }
+.dd-ic { flex: none; display: grid; place-items: center; width: 22px; height: 22px; border-radius: 6px; font-size: 13px; color: var(--accent); background: rgb(from var(--accent) r g b / 12%); }
+.dd-title { flex: none; font: 600 14px/1 var(--sans); letter-spacing: -0.01em; color: var(--t1); }
+.dd-sub { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 12px/1 var(--sans); color: var(--t3); }
+.dd-sp { flex: 1; min-width: 4px; }
+/* segmented control */
+.dd-seg { flex: none; display: inline-flex; gap: 0; padding: 2px; border-radius: 8px; background: var(--l1); box-shadow: inset 0 0 0 1px var(--l1); }
+.dd-seg-i { padding: 4px 10px; border-radius: 6px; font: 500 11.5px/1.1 var(--sans); color: var(--t3); white-space: nowrap; }
+.dd-seg-i.on { color: var(--t1); background: light-dark(var(--card), rgba(255, 255, 255, 0.1)); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.18); }
+.dd-seg-i .n { margin-left: 5px; color: var(--t4); font-variant-numeric: tabular-nums; }
+/* chips */
+.dd-chip { --cc: var(--t3); flex: none; display: inline-flex; align-items: center; gap: 5px; height: 19px; padding: 0 8px; border-radius: 999px; font: 500 11px/1 var(--sans); white-space: nowrap; color: var(--cc); background: rgb(from var(--cc) r g b / 12%); box-shadow: inset 0 0 0 1px rgb(from var(--cc) r g b / 24%); }
+.dd-chip.ok { --cc: var(--ok); }
+.dd-chip.warn { --cc: var(--warn); }
+.dd-chip.bad { --cc: var(--bad); }
+.dd-chip.live { --cc: var(--live, var(--accent)); }
+.dd-chip.accent { --cc: var(--accent); }
+.dd-chip.muted { --cc: var(--t3); }
+.dd-chip.mono { font: 500 11px/1 var(--mono); }
+.dd-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.dd-chip.live .dd-dot, .dd-chip.pulse .dd-dot { animation: dd-pulse 1.6s ease-in-out infinite; }
+@keyframes dd-pulse { 50% { opacity: 0.3; } }
+/* text */
+.dd-mono { font: 11.5px/1.3 var(--mono); font-variant-numeric: tabular-nums; }
+.dd-dim { color: var(--t3); }
+.dd-faint { color: var(--t4); }
+.dd-ok { color: var(--ok); }
+.dd-warn { color: var(--warn); }
+.dd-bad { color: var(--bad); }
+.dd-acc { color: var(--accent); }
+.dd-ell { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* groups + tables */
+.dd-group { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.dd-group-h { display: flex; align-items: center; gap: 8px; padding: 6px 10px 4px; font: 600 10.5px/1 var(--sans); letter-spacing: 0.06em; text-transform: uppercase; color: var(--t3); }
+.dd-group-h .n { color: var(--t4); letter-spacing: 0; }
+.dd-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 500 13px/1.25 var(--sans); color: var(--t1); }
+.dd-line { display: flex; align-items: center; gap: 6px; min-width: 0; overflow: hidden; white-space: nowrap; font-size: 11.5px; color: var(--t3); }
+/* column layouts */
+.dd-c-ses { grid-template-columns: 24px minmax(0, 1fr) auto; }
+/* states */
+.dd-empty { padding: 22px 10px; text-align: center; color: var(--t3); }
+.dd-err { padding: 8px 10px; border-radius: 8px; font-size: 12px; color: var(--bad); background: rgb(from var(--bad) r g b / 10%); box-shadow: inset 0 0 0 1px rgb(from var(--bad) r g b / 22%); }
+.dd-spin { width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid var(--l3); border-top-color: var(--accent); animation: dd-turn 0.8s linear infinite; }
+@keyframes dd-turn { to { transform: rotate(360deg); } }
+/* agent stage: one card per live agent, its 8-bit Claude on the left */
+.dd-agent-name { display: flex; align-items: center; gap: 6px; min-width: 0; font: 600 12.5px/1.2 var(--sans); color: var(--t1); }
+.dd-agent-name .who { color: var(--t3); font-weight: 500; }
+.dd-bubble { position: relative; align-self: flex-start; max-width: 100%; padding: 4px 9px; border-radius: 9px; font: 500 11.5px/1.3 var(--sans); color: var(--t1); background: var(--l2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dd-bubble.work { color: var(--accent); background: rgb(from var(--accent) r g b / 14%); }
+.dd-bubble.alert { color: var(--bad); background: rgb(from var(--bad) r g b / 14%); }
+.dd-bubble.idle { color: var(--ok); background: rgb(from var(--ok) r g b / 12%); }
+.dd-dots { display: inline-block; width: 0; overflow: hidden; vertical-align: bottom; animation: dd-dots 1.2s steps(4) infinite; }
+@keyframes dd-dots { to { width: 1.25em; } }
+.dd-c-ses { grid-template-columns: 26px minmax(0, 1fr) auto; }
+/* session tiles */
+.dd-tiles { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr); gap: 10px; }
+.dd-tile { --tc: var(--t4); position: relative; display: flex; flex-direction: column; min-width: 0; border-radius: 12px; background: var(--raise, var(--l1)); box-shadow: inset 0 0 0 1px var(--l2); overflow: hidden; }
+.dd-tile.work { --tc: var(--accent); }
+.dd-tile.alert { --tc: var(--bad); }
+.dd-tile.idle, .dd-tile.done { --tc: var(--ok); }
+.dd-tile.sel { box-shadow: inset 0 0 0 1.5px var(--accent), 0 0 0 3px rgb(from var(--accent) r g b / 16%); }
+.dd-tile-main { display: flex; flex-direction: column; min-width: 0; cursor: pointer; }
+.dd-tile-main:hover .dd-tile-stage { background-color: var(--l1); }
+.dd-tile-stage { position: relative; height: 84px; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 9px; background: radial-gradient(ellipse 70% 60% at 50% 100%, rgb(from var(--tc) r g b / 22%), transparent 70%); }
+.dd-tile-stage::after { content: ''; position: absolute; left: 14px; right: 14px; bottom: 8px; height: 2px; background: repeating-linear-gradient(90deg, rgb(from var(--tc) r g b / 45%) 0 4px, transparent 4px 8px); }
+.dd-tile-stage .dd-bubble { position: absolute; top: 9px; right: 9px; max-width: calc(100% - 18px); }
+.dd-tile-stage .dd-bubble::after { content: ''; position: absolute; left: 10px; bottom: -4px; width: 7px; height: 7px; background: inherit; transform: rotate(45deg); border-radius: 1px; }
+.dd-tile-stage .dd-age { position: absolute; top: 11px; left: 11px; font: 10.5px/1 var(--mono); color: var(--t4); }
+.dd-tile-body { display: flex; flex-direction: column; gap: 5px; min-width: 0; padding: 9px 12px 11px; box-shadow: inset 0 1px 0 var(--l1); }
+.dd-tile-title { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 2.6em; font: 500 12.5px/1.3 var(--sans); color: var(--t1); }
+.dd-tile.sleep .dd-tile-title { color: var(--t2); }
+.dd-ask { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; padding: 6px 8px; border-radius: 7px; font: 11px/1.35 var(--mono); white-space: pre-wrap; color: var(--bad); background: rgb(from var(--bad) r g b / 9%); box-shadow: inset 0 0 0 1px rgb(from var(--bad) r g b / 22%); }
+.dd-tile-acts { display: flex; gap: 6px; padding: 0 12px 11px; }
+.dd-btn { flex: 1; padding: 5px 0; border-radius: 7px; text-align: center; font: 500 11.5px/1.2 var(--sans); color: var(--t2); background: var(--l1); box-shadow: inset 0 0 0 1px var(--l2); cursor: pointer; user-select: none; -webkit-user-select: none; }
+.dd-btn:hover { color: var(--t1); background: var(--l2); }
+.dd-btn.go { color: var(--accent); }
+.dd-btn.danger { color: var(--bad); }
+.dd-btn.danger.armed { color: #fff; background: var(--bad); box-shadow: none; }
+/* needs-you: pulsing glow, bouncing bubble, banner */
+@keyframes dd-alarm { 0%, 100% { box-shadow: inset 0 0 0 1.5px rgb(from var(--bad) r g b / 55%), 0 0 0 0 rgb(from var(--bad) r g b / 0%); } 50% { box-shadow: inset 0 0 0 1.5px var(--bad), 0 0 0 6px rgb(from var(--bad) r g b / 20%); } }
+@keyframes dd-bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+@keyframes dd-ring { 0%, 60%, 100% { transform: rotate(0); } 10%, 30%, 50% { transform: rotate(-16deg); } 20%, 40% { transform: rotate(16deg); } }
+.dd-tile.alert { animation: dd-alarm 1.4s ease-in-out infinite; }
+.dd-bubble.alert { animation: dd-bounce 0.7s ease-in-out infinite; color: #fff; background: var(--bad); }
+.dd-bubble.done { color: var(--ok); background: rgb(from var(--ok) r g b / 12%); }
+.dd-alarm-bar { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 10px; font: 600 12.5px/1.2 var(--sans); color: #fff; background: linear-gradient(90deg, var(--bad), rgb(from var(--bad) r g b / 72%)); box-shadow: 0 0 0 0 rgb(from var(--bad) r g b / 30%); animation: dd-alarm 1.4s ease-in-out infinite; cursor: pointer; }
+.dd-alarm-bar .bell { display: inline-block; font-size: 14px; animation: dd-ring 1.6s ease-in-out infinite; transform-origin: 50% 0; }
+.dd-alarm-bar .hint { margin-left: auto; font-weight: 500; opacity: 0.85; }
+.dd-tile .cl-w.st-alert .cl-b::after { display: none; }
+.dd-ask { max-height: calc(1.35em * 3 + 12px); }
+/* hover peek: the agent's terminal over the tile (Open/Close stay reachable below) */
+.dd-tile-main { position: relative; }
+.dd-peek { position: absolute; left: 0; right: 0; top: 0; bottom: 0; z-index: 5; display: flex; flex-direction: column; gap: 6px; padding: 9px 10px 8px; overflow: hidden; background: rgb(10 9 14); box-shadow: inset 0 0 0 1px var(--l2); border-radius: 12px 12px 0 0; opacity: 0; pointer-events: none; transition: opacity 0.12s ease 0s; }
+.dd-tile-main:hover .dd-peek { opacity: 1; pointer-events: auto; transition: opacity 0.15s ease 0.35s; }
+.dd-peek-h { flex: none; display: flex; align-items: center; gap: 6px; font: 600 10.5px/1 var(--sans); letter-spacing: 0.04em; text-transform: uppercase; color: #8a869c; }
+.dd-peek-h .dd-dot { color: var(--live, #60a5fa); }
+.dd-peek-h .sp { flex: 1; }
+.dd-peek-b { flex: 1; min-height: 0; display: flex; flex-direction: column; justify-content: flex-end; overflow: hidden; font: 10.5px/1.35 var(--mono); color: #c9c5d6; }
+.dd-peek-b > span { display: block; white-space: pre; overflow: hidden; text-overflow: ellipsis; }
+.dd-peek-b .you { color: #8fb4ff; }
+.dd-peek-b .claude { color: #f0eee8; }
+.dd-peek-b .busy { color: #e0a36f; }
+.dd-peek-b .ok { color: #7fd99a; }
+.dd-peek-b .dim { color: #6e6a80; }
+.dd-peek-b { font: 10px/1.4 var(--mono); }
+.dd-peek-b > span { flex: none; }
+.dd-peek-h { white-space: nowrap; overflow: hidden; }
+/* peek as a popover: breaks out of the tile, two tiles wide */
+.dd-tile { overflow: visible; }
+.dd-tile-stage { border-radius: 12px 12px 0 0; }
+.dd-tile:hover { z-index: 20; }
+.dd-tile-main { position: static; }
+.dd-tile { position: relative; }
+.dd-peek { left: 0; right: auto; top: 0; bottom: auto; width: calc(200% + 10px); height: 340px; padding: 12px 14px 12px; gap: 8px; border-radius: 12px; background: rgb(12 11 17); box-shadow: inset 0 0 0 1px rgb(255 255 255 / 10%), 0 18px 48px rgb(0 0 0 / 55%), 0 2px 8px rgb(0 0 0 / 35%); }
+.dd-tiles > .dd-tile:nth-child(3n + 2) .dd-peek { left: calc(-50% - 5px); }
+.dd-tiles > .dd-tile:nth-child(3n) .dd-peek { left: auto; right: 0; }
+.dd-tiles > .dd-tile:nth-last-child(-n + 3):nth-child(n + 4) .dd-peek { top: auto; bottom: 0; }
+.dd-peek-h { font: 600 11px/1.2 var(--sans); letter-spacing: 0.03em; padding-bottom: 8px; box-shadow: inset 0 -1px 0 rgb(255 255 255 / 8%); }
+.dd-peek-h .ttl { text-transform: none; letter-spacing: 0; font-weight: 500; color: #d8d5e2; overflow: hidden; text-overflow: ellipsis; }
+.dd-peek-b { font: 12px/1.45 var(--mono); }
