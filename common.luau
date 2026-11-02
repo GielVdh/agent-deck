@@ -190,16 +190,14 @@ end
 -- styled elements
 ----------------------------------------------------------------------------
 
--- `act` makes the element clickable (el prop `on`): a click arrives as {ev = "action", act, value}
+-- `act` makes the element clickable (Tern only honours `actions = { click = act }`):
+-- a click arrives as {ev = "action", act, value}
 -- ("open=3" splits into act "open", value "3").
 local function el(tag: string, cls: string?, children: { any }?, text: string?, act: string?)
 	local p: any = {}
 	if cls then p.class = cls end
 	if text then p.text = text end
-	if act then
-		p.on = act
-		p.act = act
-	end
+	if act then p.actions = { click = act } end
 	return ui.el(tag, p, children)
 end
 M.el = el
