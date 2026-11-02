@@ -33,6 +33,26 @@ local function agent_label(agent: string?): string
 end
 
 local LOCAL = "local"
+
+-- Tile sizes, smallest first: how many tiles share a row (styles.css sizes the rest).
+local SIZES = {
+	{ id = "xs", label = "XS", cols = 5 },
+	{ id = "s", label = "S", cols = 4 },
+	{ id = "m", label = "M", cols = 3 },
+	{ id = "l", label = "L", cols = 2 },
+}
+local DEFAULT_SIZE = 3
+
+local function size_index(id: string?): number
+	for i, z in SIZES do
+		if z.id == id then return i end
+	end
+	return DEFAULT_SIZE
+end
+
+local function size_of(s)
+	return SIZES[size_index(s.size)]
+end
 local MAX_ASLEEP = 18
 
 -- The machine a tile lives on, as C.py/C.open_tab/C.sh take it: nil is this Mac.
@@ -268,6 +288,16 @@ local function tile_view(s, t, i: number)
 	return C.div("dd-tile " .. t.state .. (if i == s.sel then " sel" else ""), kids)
 end
 
+-- The size switch: click a size, or press - / + to step through them.
+local function size_seg(s)
+	local cur = size_of(s).id
+	local kids = {}
+	for _, z in SIZES do
+		table.insert(kids, C.el("span", "dd-seg-i dd-seg-btn" .. (if z.id == cur then " on" else ""), nil, z.label, "size=" .. z.id))
+	end
+	return C.el("div", "dd-seg", kids)
+end
+
 -- The machine filter: All, this Mac, each running workspace, with live counts.
 local function machine_seg(s)
 	local items = { { "All", s.view == nil } }
@@ -280,7 +310,7 @@ end
 
 tern.block.define("sessions", {
 	init = function(cx, args, saved)
-		local s = { cx = cx, sel = 1, by = {}, order = { LOCAL }, loading = false, view = saved and saved.view }
+		local s = { cx = cx, sel = 1, by = {}, order = { LOCAL }, loading = false, view = saved and saved.view, size = saved and saved.size }
 		sessions_refresh(s)
 		C.every(10000, s, function() sessions_refresh(s) end)
 		return s
@@ -293,7 +323,7 @@ tern.block.define("sessions", {
 		local view = if s.view == nil then "all machines" elseif s.view == LOCAL then "Mac" else s.view
 		return "Sessions · " .. (if need > 0 then `{need} need{if need == 1 then "s" else ""} you` else view)
 	end,
-	save = function(s) return { view = s.view } end,
+	save = function(s) return { view = s.view, size = s.size } end,
 	view = function(s, cx)
 		local all = tiles(s)
 		local working, waiting = 0, {}
@@ -302,7 +332,7 @@ tern.block.define("sessions", {
 			if t.state == "alert" then table.insert(waiting, { t, i }) end
 		end
 		local sub = if #waiting > 0 then `{#waiting} waiting on you` elseif working > 0 then `{working} working` else "the crew"
-		local kids = { C.head("✦", "Sessions", sub, { machine_seg(s) }, s.loading) }
+		local kids = { C.head("✦", "Sessions", sub, { size_seg(s), machine_seg(s) }, s.loading) }
 
 		if #waiting > 0 then
 			local names = {}
@@ -323,25 +353,33 @@ tern.block.define("sessions", {
 			if e then table.insert(kids, C.err((if m == LOCAL then "Mac" else m) .. ": " .. e)) end
 		end
 
+		local z = size_of(s)
+		local grid = `dd-tiles {z.id} c{z.cols}`
 		local live, asleep = {}, {}
 		for i, t in all do
 			table.insert(if t.agent then live else asleep, tile_view(s, t, i))
 		end
 		table.insert(kids, C.group("On stage", #live, {
-			if #live > 0 then C.div("dd-tiles", live) else C.empty("nobody's on shift — pick a session below and press n to start one"),
+			if #live > 0 then C.div(grid, live) else C.empty("nobody's on shift — pick a session below and press n to start one"),
 		}))
 		table.insert(kids, C.group("Asleep · recent sessions", #asleep, {
-			if #asleep > 0 then C.div("dd-tiles", asleep) else C.empty(if s.loading then "loading…" else "no sessions"),
+			if #asleep > 0 then C.div(grid, asleep) else C.empty(if s.loading then "loading…" else "no sessions"),
 		}))
 
 		return {
 			main = C.page(kids),
-			dock = C.keys({ { "←↑↓→", "select" }, { "⏎", "open / answer" }, { "x", "close" }, { "n", "new claude here" }, { "m", "machines" }, { "r", "refresh" } }, s.updated),
+			dock = C.keys({ { "←↑↓→", "select" }, { "⏎", "open / answer" }, { "x", "close" }, { "n", "new claude here" }, { "m", "machines" }, { "- +", "tile size" }, { "r", "refresh" } }, s.updated),
 		}
 	end,
 	event = function(s, ev, cx)
 		tern.log.debug("agent-deck sessions event", tern.json.encode(ev))
 		if ev.ev ~= "action" then return end
+		if ev.act == "size" then
+			s.size = SIZES[size_index(ev.value)].id
+			pcall(function() s.cx:save() end)
+			C.render(s)
+			return
+		end
 		local i = tonumber(ev.value)
 		local t = i and tiles(s)[i]
 		if not t then return end
@@ -356,8 +394,15 @@ tern.block.define("sessions", {
 	key = function(s, key, cx)
 		local all = tiles(s)
 		local k = key.name
-		-- tiles sit 3 to a row: ←/→ step one, ↑/↓ a whole row
-		local step = { left = -1, h = -1, right = 1, l = 1, up = -3, k = -3, down = 3, j = 3 }
+		-- ←/→ step one tile, ↑/↓ a whole row
+		local cols = size_of(s).cols
+		local step = { left = -1, h = -1, right = 1, l = 1, up = -cols, k = -cols, down = cols, j = cols }
+		local grow = ({ ["-"] = -1, ["_"] = -1, ["+"] = 1, ["="] = 1 })[k]
+		if grow then
+			s.size = SIZES[math.clamp(size_index(s.size) + grow, 1, #SIZES)].id
+			pcall(function() s.cx:save() end)
+			return true
+		end
 		if step[k] then
 			s.sel = math.clamp(s.sel + step[k], 1, math.max(1, #all))
 			return true

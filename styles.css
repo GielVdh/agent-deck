@@ -58,6 +58,7 @@
 .dd-c-ses { grid-template-columns: 26px minmax(0, 1fr) auto; }
 /* session tiles */
 .dd-tiles { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr); gap: 10px; }
+.dd-agent-name .who { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .dd-tile { --tc: var(--t4); position: relative; display: flex; flex-direction: column; min-width: 0; border-radius: 12px; background: var(--raise, var(--l1)); box-shadow: inset 0 0 0 1px var(--l2); overflow: hidden; }
 .dd-tile.work { --tc: var(--accent); }
 .dd-tile.alert { --tc: var(--bad); }
@@ -116,9 +117,50 @@
 .dd-tile-main { position: static; }
 .dd-tile { position: relative; }
 .dd-peek { left: 0; right: auto; top: 0; bottom: auto; width: calc(200% + 10px); height: 340px; padding: 12px 14px 12px; gap: 8px; border-radius: 12px; background: rgb(12 11 17); box-shadow: inset 0 0 0 1px rgb(255 255 255 / 10%), 0 18px 48px rgb(0 0 0 / 55%), 0 2px 8px rgb(0 0 0 / 35%); }
-.dd-tiles > .dd-tile:nth-child(3n + 2) .dd-peek { left: calc(-50% - 5px); }
-.dd-tiles > .dd-tile:nth-child(3n) .dd-peek { left: auto; right: 0; }
-.dd-tiles > .dd-tile:nth-last-child(-n + 3):nth-child(n + 4) .dd-peek { top: auto; bottom: 0; }
 .dd-peek-h { font: 600 11px/1.2 var(--sans); letter-spacing: 0.03em; padding-bottom: 8px; box-shadow: inset 0 -1px 0 rgb(255 255 255 / 8%); }
 .dd-peek-h .ttl { text-transform: none; letter-spacing: 0; font-weight: 500; color: #d8d5e2; overflow: hidden; text-overflow: ellipsis; }
 .dd-peek-b { font: 12px/1.45 var(--mono); }
+/* tile sizes (host.luau SIZES): columns, sprite scale, stage height, and where the peek opens */
+.dd-tiles.c5 { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr); gap: 8px; }
+.dd-tiles.xs .dd-tile-stage { height: 58px; }
+.dd-tiles.xs .cl-w.lg { transform: scale(1.0); margin: 0 0px 0px 0; }
+.dd-tiles.xs .dd-peek { width: calc(300% + 16px); }
+.dd-tiles.c5 > .dd-tile:nth-child(5n + 4) .dd-peek { left: auto; right: 0; }
+.dd-tiles.c5 > .dd-tile:nth-child(5n) .dd-peek { left: auto; right: 0; }
+.dd-tiles.c5 > .dd-tile:nth-last-child(-n + 5):nth-child(n + 6) .dd-peek { top: auto; bottom: 0; }
+.dd-tiles.c4 { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr); gap: 10px; }
+.dd-tiles.s .dd-tile-stage { height: 72px; }
+.dd-tiles.s .cl-w.lg { transform: scale(1.25); margin: 0 9px 9px 0; }
+.dd-tiles.s .dd-peek { width: calc(200% + 10px); }
+.dd-tiles.c4 > .dd-tile:nth-child(4n) .dd-peek { left: auto; right: 0; }
+.dd-tiles.c4 > .dd-tile:nth-last-child(-n + 4):nth-child(n + 5) .dd-peek { top: auto; bottom: 0; }
+.dd-tiles.c3 { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr); gap: 10px; }
+.dd-tiles.m .dd-tile-stage { height: 84px; }
+.dd-tiles.m .cl-w.lg { transform: scale(1.5); margin: 0 18px 18px 0; }
+.dd-tiles.m .dd-peek { width: calc(200% + 10px); }
+.dd-tiles.c3 > .dd-tile:nth-child(3n) .dd-peek { left: auto; right: 0; }
+.dd-tiles.c3 > .dd-tile:nth-last-child(-n + 3):nth-child(n + 4) .dd-peek { top: auto; bottom: 0; }
+.dd-tiles.c2 { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
+.dd-tiles.l .dd-tile-stage { height: 124px; }
+.dd-tiles.l .cl-w.lg { transform: scale(2.25); margin: 0 45px 45px 0; }
+.dd-tiles.l .dd-peek { width: 100%; }
+.dd-tiles.c2 > .dd-tile:nth-last-child(-n + 2):nth-child(n + 3) .dd-peek { top: auto; bottom: 0; }
+.dd-tiles.xs .dd-tile-body { gap: 3px; padding: 7px 9px 8px; }
+.dd-tiles.xs .dd-agent-name { font-size: 11.5px; }
+.dd-tiles.xs .dd-tile-title { -webkit-line-clamp: 1; min-height: 1.3em; font-size: 11.5px; }
+.dd-tiles.xs .dd-line, .dd-tiles.xs .dd-tile-acts, .dd-tiles.xs .dd-age, .dd-tiles.xs .dd-ask { display: none; }
+.dd-tiles.xs .dd-tile-stage { padding-bottom: 7px; }
+.dd-tiles.xs .dd-tile-stage .dd-bubble { top: 6px; right: 6px; padding: 2px 6px; font-size: 10px; }
+.dd-tiles.s .dd-tile-body { padding: 8px 10px 10px; }
+.dd-tiles.s .dd-tile-title { font-size: 12px; }
+.dd-tiles.s .dd-tile-acts { padding: 0 10px 10px; }
+.dd-tiles.s .dd-tile-stage .dd-bubble { font-size: 10.5px; padding: 3px 7px; }
+.dd-tiles.l .dd-tile-body { gap: 7px; padding: 12px 16px 14px; }
+.dd-tiles.l .dd-agent-name { font-size: 14px; }
+.dd-tiles.l .dd-tile-title { -webkit-line-clamp: 3; min-height: 3.9em; font-size: 14px; }
+.dd-tiles.l .dd-tile-acts { padding: 0 16px 14px; }
+.dd-tiles.l .dd-btn { padding: 7px 0; font-size: 12.5px; }
+.dd-tiles.l .dd-tile-stage .dd-bubble { top: 12px; right: 12px; padding: 5px 11px; font-size: 12.5px; }
+.dd-tiles.l .dd-tile-stage .dd-age { top: 14px; left: 14px; font-size: 11.5px; }
+.dd-seg-btn { cursor: pointer; user-select: none; -webkit-user-select: none; }
+.dd-seg-btn:hover { color: var(--t1); }

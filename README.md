@@ -12,6 +12,7 @@ Open it with ⌘K → **Sessions**.
 - **Status straight from the agent.** For Claude Code that is its own session status (working, running a command, idle, waiting on you); for other agents it comes from herdr or Superset.
 - **Hover to peek.** Hover a tile and a popover shows the bottom of that session's terminal: what it is doing or saying right now.
 - **Click to jump in.** A click (or ⏎) opens the live session in a Tern tab, attached to its Superset terminal or herdr pane. Close ends it (press twice).
+- **Pick a tile size.** XS fits five tiles to a row (just the character, name and title), L fits two with a bigger character and longer titles. Click XS / S / M / L in the header or press `-` / `+`; the block remembers it.
 - **Recent sessions sleep below.** Your recent Claude Code sessions doze in their own tiles; click one to resume it.
 - **Every machine at once.** Agents on this Mac and on each of your running Coder workspaces share one view; remote tiles say where they run (`· herdr @ my-workspace`), and Open, Close and `n` act on that machine. Press `m` to narrow the view to one machine. The helpers run there over ssh; nothing needs installing.
 
@@ -111,7 +112,7 @@ Everything has a default. To change one, copy `config.example.json` to `config.j
 
 ## Keys
 
-`←↑↓→` select · `⏎` open / answer · `x` close (twice) · `n` new Claude in that folder · `m` all machines / one machine · `r` refresh
+`←↑↓→` select · `⏎` open / answer · `x` close (twice) · `n` new Claude in that folder · `m` all machines / one machine · `-` `+` tile size · `r` refresh
 
 ## How it works
 
