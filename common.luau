@@ -93,11 +93,15 @@ local function shq(s: string): string
 end
 M.shq = shq
 
+-- Non-interactive ssh shells only get the system PATH; herdr, Superset's agents and
+-- other user installs live in these.
+local REMOTE_PATH = 'export PATH="$HOME/.local/bin:$HOME/.superset/bin:$HOME/bin:$PATH"; '
+
 -- Opens a Tern tab in `dir` on `machine` (nil = this Mac) running `cmd` (a shell string), else a shell.
 function M.open_tab(machine: string?, dir: string?, cmd: string?)
 	local argv = { M.TERN, "new", "tab" }
 	if machine then
-		local remote = (if dir then "cd " .. shq(dir) .. " && " else "") .. "exec " .. (cmd or "$SHELL -l")
+		local remote = REMOTE_PATH .. (if dir then "cd " .. shq(dir) .. " && " else "") .. "exec " .. (cmd or "$SHELL -l")
 		for _, a in { "--keep-open", "--", M.TERN, "ssh", M.ssh_host(machine), "-t", remote } do table.insert(argv, a) end
 	else
 		if dir then
@@ -334,7 +338,7 @@ end
 -- Runs a shell command line on `machine` over ssh, or locally through a login shell.
 function M.sh(machine: string?, cmd: string, cb: ((boolean, string) -> ())?)
 	local argv = if machine then ssh_argv(machine) else { "/bin/zsh", "-lc" }
-	table.insert(argv, cmd)
+	table.insert(argv, if machine then REMOTE_PATH .. cmd else cmd)
 	M.run(argv, { timeout_ms = 30000 }, cb or function() end)
 end
 
